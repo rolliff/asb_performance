@@ -18,6 +18,11 @@ import reactor.core.publisher.Flux;
 
 public class App
 {
+  final int MESSAGE_SIZE = 10 * 1024;
+  final String CONNECTION_STRING = "";
+  final String TOPIC_NAME = "insert-topic";
+  final int NUMBER_OF_MESSAGES_TO_SEND = 1000000;
+
   public static void main(String[] args)
   {
     new App().shoveMessagesIntoAsb();
@@ -26,12 +31,11 @@ public class App
   public void shoveMessagesIntoAsb()
   {
     final AtomicInteger messagesSent = new AtomicInteger();
-    final int numberOfMessagesToSend = 1000000;
 
     try (final AutoCloseable ignored = startLogging(messagesSent);
         final ServiceBusSenderAsyncClient sender = createSender())
     {
-      Flux.range(0, numberOfMessagesToSend)
+      Flux.range(0, NUMBER_OF_MESSAGES_TO_SEND)
           .map(this::createServiceBusMessage)
           .flatMap(message -> sender
               .sendMessage(message)
@@ -46,12 +50,11 @@ public class App
 
   private ServiceBusSenderAsyncClient createSender()
   {
-    final String connectionString = "<changeme>";
-    final String topicName = "insert-topic";
+
     return new ServiceBusClientBuilder()
-        .connectionString(connectionString)
+        .connectionString(CONNECTION_STRING)
         .sender()
-        .topicName(topicName)
+        .topicName(TOPIC_NAME)
         .buildAsyncClient();
   }
 
@@ -76,7 +79,8 @@ public class App
 
   private ServiceBusMessage createServiceBusMessage(Integer integer)
   {
-    ServiceBusMessage serviceBusMessage = new ServiceBusMessage(BinaryData.fromBytes(generateRandomBytes(1024)));
+    ServiceBusMessage serviceBusMessage = new ServiceBusMessage(
+        BinaryData.fromBytes(generateRandomBytes(MESSAGE_SIZE)));
     serviceBusMessage.setMessageId(UUID.randomUUID().toString());
     return serviceBusMessage;
   }
